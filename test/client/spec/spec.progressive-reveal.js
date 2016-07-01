@@ -99,6 +99,34 @@ describe('Progressive Reveal', function () {
 
     });
 
+    describe('select', function () {
+
+        describe('', function () {
+            beforeEach(function () {
+                $('#test-container').append('<form />');
+                $('form').append('<label for="radio1">');
+                $('form').append('<div id="select-toggle" class="reveal js-hidden">');
+                var $select = $('<select id="select">').append([
+                    $('<option value="option1">').text('One'),
+                    $('<option value="option2" data-toggle="select-toggle">').text('two'),
+                    $('<option value="option3">').text('three')
+                ]);
+                $('label').append($select);
+                progressiveReveal();
+            });
+
+            it('should toggle when the second option is selected', function () {
+                $('#select-toggle').hasClass('js-hidden').should.be.ok;
+                $('#select').val('option2');
+                var evt = document.createEvent("HTMLEvents");
+                evt.initEvent("change", false, true);
+                $('#select').get(0).dispatchEvent(evt);
+                $('#select-toggle').hasClass('js-hidden').should.not.be.ok;
+            });
+        });
+
+    });
+
     describe('radio', function () {
 
         beforeEach(function () {
