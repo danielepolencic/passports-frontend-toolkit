@@ -53,7 +53,7 @@ function setupRevealSelect(select) {
 
     if (toggle) {
         select.setAttribute('aria-controls', toggleId);
-        toggleListener()
+        toggleListener();
     }
 
     function toggleListener() {
@@ -61,18 +61,18 @@ function setupRevealSelect(select) {
         var toggleId = currentOption.getAttribute(toggleAttr);
         var toggle = document.getElementById(toggleId);
 
-        if (toggle) {
-            for (var i = 0, len = select.options.length; i < len; i++) {
-                var option = select.options[i];
-                option.setAttribute('aria-expanded', 'false');
-                var toggleId2 = option.getAttribute(toggleAttr);
-                if (toggleId2) {
-                    var toggleSection = document.getElementById(toggleId2);
-                    toggleSection.setAttribute('aria-hidden', 'true');
-                    helpers.addClass(toggleSection, hiddenClass);
-                }
+        for (var i = 0, len = select.options.length; i < len; i++) {
+            var option = select.options[i];
+            option.setAttribute('aria-expanded', 'false');
+            var toggleId2 = option.getAttribute(toggleAttr);
+            if (toggleId2) {
+                var toggleSection = document.getElementById(toggleId2);
+                toggleSection.setAttribute('aria-hidden', 'true');
+                helpers.addClass(toggleSection, hiddenClass);
             }
+        }
 
+        if (toggle) {
             currentOption.setAttribute('aria-expanded', 'true');
             toggle.setAttribute('aria-hidden', 'false');
             helpers.removeClass(toggle, hiddenClass);

@@ -100,12 +100,18 @@ describe('Progressive Reveal', function () {
     });
 
     describe('select', function () {
+        function dispatchEvent(eventName, element) {
+            var $element = $(element);
+            var evt = document.createEvent('HTMLEvents');
+            evt.initEvent(eventName, false, true);
+            $element.get(0).dispatchEvent(evt);
+        }
 
-        describe('', function () {
+        describe('single', function () {
             beforeEach(function () {
                 $('#test-container').append('<form />');
+                $('#test-container').append('<div id="select-toggle" class="reveal js-hidden">');
                 $('form').append('<label for="radio1">');
-                $('form').append('<div id="select-toggle" class="reveal js-hidden">');
                 var $select = $('<select id="select">').append([
                     $('<option value="option1">').text('One'),
                     $('<option value="option2" data-toggle="select-toggle">').text('two'),
@@ -118,10 +124,68 @@ describe('Progressive Reveal', function () {
             it('should toggle when the second option is selected', function () {
                 $('#select-toggle').hasClass('js-hidden').should.be.ok;
                 $('#select').val('option2');
-                var evt = document.createEvent("HTMLEvents");
-                evt.initEvent("change", false, true);
-                $('#select').get(0).dispatchEvent(evt);
+                dispatchEvent('change', $('#select'));
                 $('#select-toggle').hasClass('js-hidden').should.not.be.ok;
+            });
+
+            it('should toggle when the second option is selected and dismissed', function () {
+                $('#select').val('option2');
+                dispatchEvent('change', $('#select'));
+                $('#select').val('option1');
+                dispatchEvent('change', $('#select'));
+                $('#select-toggle').hasClass('js-hidden').should.be.ok;
+            });
+        });
+
+        describe('pre-selected', function () {
+            beforeEach(function () {
+                $('#test-container').append('<form />');
+                $('form').append('<label for="radio1">');
+                $('form').append('<div id="select-toggle" class="reveal js-hidden">');
+                var $select = $('<select id="select">').append([
+                    $('<option value="option1" data-toggle="select-toggle">').text('One'),
+                    $('<option value="option2">').text('two'),
+                    $('<option value="option3">').text('three')
+                ]);
+                $('label').append($select);
+            });
+
+            it('should show the section', function () {
+                $('#select-toggle').hasClass('js-hidden').should.be.ok;
+                progressiveReveal();
+                $('#select-toggle').hasClass('js-hidden').should.not.be.ok;
+            });
+
+            it('should hide the section', function () {
+                progressiveReveal();
+                $('#select').val('option2');
+                dispatchEvent('change', $('#select'));
+                $('#select-toggle').hasClass('js-hidden').should.be.ok;
+            });
+        });
+
+        describe('multiple section', function () {
+            beforeEach(function () {
+                $('#test-container').append('<form />');
+                $('#test-container').append('<div id="select-toggle-1" class="reveal js-hidden">');
+                $('#test-container').append('<div id="select-toggle-2" class="reveal js-hidden">');
+                $('form').append('<label for="radio1">');
+                var $select = $('<select id="select">').append([
+                    $('<option value="option1" data-toggle="select-toggle-1">').text('One'),
+                    $('<option value="option2">').text('two'),
+                    $('<option value="option3" data-toggle="select-toggle-2">').text('three')
+                ]);
+                $('label').append($select);
+                progressiveReveal();
+            });
+
+            it('should show only one section at the time', function () {
+                $('#select-toggle-1').hasClass('js-hidden').should.not.be.ok;
+                $('#select-toggle-2').hasClass('js-hidden').should.be.ok;
+                $('#select').val('option3');
+                dispatchEvent('change', $('#select'));
+                $('#select-toggle-1').hasClass('js-hidden').should.be.ok;
+                $('#select-toggle-2').hasClass('js-hidden').should.not.be.ok;
             });
         });
 
