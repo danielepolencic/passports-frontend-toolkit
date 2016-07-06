@@ -4,21 +4,23 @@ var _ = require('underscore');
 
 var helpers = require('./helpers');
 
-var inputs, groups,
-    selects,
+var groups,
     toggleAttr = 'data-toggle',
     hiddenClass = 'js-hidden';
 
-function inputClicked(e, target) {
-    target = target || helpers.target(e);
-    var shown;
-    _.each(groups[target.name], function (input) {
-        var id = input.getAttribute(toggleAttr);
-        // check if the element supplied is part of an {id}-panel
-        // if so then toggle this parent element to also toggle
-        // associated labels and legends
-        var toggle = document.getElementById(id + '-panel') || document.getElementById(id);
-        if (toggle) {
+function inputClickedListener(target) {
+    return function () {
+        var shown;
+        _.each(groups[target.name], function (input) {
+            var id = input.getAttribute(toggleAttr);
+            // check if the element supplied is part of an {id}-panel
+            // if so then toggle this parent element to also toggle
+            // associated labels and legends
+            var toggle = document.getElementById(id + '-panel') || document.getElementById(id);
+            if (!toggle) {
+                return;
+            }
+
             if (input.checked) {
                 input.setAttribute('aria-expanded', 'true');
                 toggle.setAttribute('aria-hidden', 'false');
@@ -31,77 +33,83 @@ function inputClicked(e, target) {
                     helpers.addClass(toggle, hiddenClass);
                 }
             }
-        }
-    });
+        });
+    };
 }
 
-function setupReveal(input) {
-    var toggleId = input.getAttribute(toggleAttr),
-        toggle = document.getElementById(toggleId);
+function selectChangeListener(select) {
+    return function () {
+        var currentOption = select.options[select.selectedIndex],
+            currentSectionToggleId = currentOption.getAttribute(toggleAttr),
+            currentSectionToggle = document.getElementById(currentSectionToggleId);
 
-    if (toggle) {
-        input.setAttribute('aria-controls', toggleId);
-        inputClicked(null, input);
-    }
-    helpers.addEvent(input, 'click', inputClicked);
-}
-
-function setupRevealSelect(select) {
-    var currentOption = select.options[select.selectedIndex];
-    var toggleId = currentOption.getAttribute(toggleAttr);
-    var toggle = document.getElementById(toggleId);
-
-    if (toggle) {
-        select.setAttribute('aria-controls', toggleId);
-        toggleListener();
-    }
-
-    function toggleListener() {
-        var currentOption = select.options[select.selectedIndex];
-        var toggleId = currentOption.getAttribute(toggleAttr);
-        var toggle = document.getElementById(toggleId);
-
-        for (var i = 0, len = select.options.length; i < len; i++) {
-            var option = select.options[i];
+        _.each(select.options, function (option) {
             option.setAttribute('aria-expanded', 'false');
-            var toggleId2 = option.getAttribute(toggleAttr);
-            if (toggleId2) {
-                var toggleSection = document.getElementById(toggleId2);
-                toggleSection.setAttribute('aria-hidden', 'true');
-                helpers.addClass(toggleSection, hiddenClass);
-            }
-        }
+            var toggleSectionId = option.getAttribute(toggleAttr),
+                toggleSection = document.getElementById(toggleSectionId);
 
-        if (toggle) {
+            if (!toggleSection) {
+                return;
+            }
+
+            toggleSection.setAttribute('aria-hidden', 'true');
+            helpers.addClass(toggleSection, hiddenClass);
+        });
+
+        if (currentSectionToggle) {
             currentOption.setAttribute('aria-expanded', 'true');
-            toggle.setAttribute('aria-hidden', 'false');
-            helpers.removeClass(toggle, hiddenClass);
+            currentSectionToggle.setAttribute('aria-hidden', 'false');
+            helpers.removeClass(currentSectionToggle, hiddenClass);
         }
+    };
+}
+
+
+function setupRevealForInputElement(input) {
+    var sectionToggleId = input.getAttribute(toggleAttr),
+        sectionToggle = document.getElementById(sectionToggleId);
+
+    if (sectionToggle) {
+        input.setAttribute('aria-controls', sectionToggleId);
+        inputClickedListener(input)();
     }
 
-    helpers.addEvent(select, 'change', toggleListener);
+    helpers.addEvent(input, 'click', inputClickedListener(input));
+}
+
+function setupRevealForSelectElement(select) {
+    var currentOption = select.options[select.selectedIndex],
+        sectionToggleId = currentOption.getAttribute(toggleAttr),
+        sectionToggle = document.getElementById(sectionToggleId);
+
+    if (sectionToggle) {
+        select.setAttribute('aria-controls', sectionToggleId);
+        selectChangeListener(select)();
+    }
+
+    helpers.addEvent(select, 'change', selectChangeListener(select));
 }
 
 function progressiveReveal() {
     var forms = document.getElementsByTagName('form'),
-        input,
-        select;
-
-    if (forms.length > 0) {
-        inputs = document.getElementsByTagName('input');
+        inputs = document.getElementsByTagName('input'),
         selects = document.getElementsByTagName('select');
-        groups = _.groupBy(inputs, 'name');
-        for (var i = 0, num = inputs.length; i < num; i++) {
-            input = inputs[i];
-            if (input.type.match(/radio|checkbox/)) {
-                helpers.once(input, 'progressive-reveal', setupReveal);
-            }
-        }
-        for (var j = 0, jLen = selects.length; j < jLen; j++) {
-            select = selects[j];
-            helpers.once(select, 'progressive-reveal', setupRevealSelect);
-        }
+
+    if (forms.length === 0) {
+        return;
     }
+
+    groups = _.groupBy(inputs, 'name');
+
+    _.each(inputs, function (input) {
+        if (/radio|checkbox/.test(input.type)) {
+            helpers.once(input, 'progressive-reveal', setupRevealForInputElement);
+        }
+    });
+
+    _.each(selects, function (select) {
+        helpers.once(select, 'progressive-reveal', setupRevealForSelectElement);
+    });
 }
 
 module.exports = progressiveReveal;
